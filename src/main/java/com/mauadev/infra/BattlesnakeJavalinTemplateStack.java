@@ -42,7 +42,7 @@ public class BattlesnakeJavalinTemplateStack extends Stack {
 
         Function lambdaFn = Function.Builder.create(this, "BattleSnakeLambda")
                 .runtime(Runtime.JAVA_21)
-                .code(Code.fromAsset("../src/target/your-lambda-code.jar")) // Adjust path to your JAR file
+                .code(Code.fromAsset("src/target/Snake.jar")) // Adjust path to your JAR file
                 .handler("com.example.Handler::handleRequest") // Use Java handler format
                 .timeout(Duration.seconds(15))
                 .build();
