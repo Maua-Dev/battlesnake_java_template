@@ -38,8 +38,7 @@ jobs:
             cache: 'maven'
 
       - name: Build Java project with Maven
-        working-directory: ../
-        run: mvn clean package
+        run: cd .. && mvn clean package
 
       - name: Setup AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
