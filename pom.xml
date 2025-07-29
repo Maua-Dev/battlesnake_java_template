@@ -4,17 +4,15 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.mauadev</groupId>
-    <artifactId>battlesnake-lambda</artifactId> <version>1.0</version> <properties>
+    <artifactId>battlesnake-lambda</artifactId>
+    <version>1.0</version>
+
+    <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <cdk.version>2.189.0</cdk.version> <maven.compiler.release>21</maven.compiler.release> <jackson.version>2.17.2</jackson.version> </properties>
+        <maven.compiler.release>17</maven.compiler.release>
+    </properties>
 
     <dependencies>
-        <dependency>
-            <groupId>software.amazon.awscdk</groupId>
-            <artifactId>aws-cdk-lib</artifactId>
-            <version>${cdk.version}</version>
-        </dependency>
-        
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-lambda-java-core</artifactId>
@@ -24,18 +22,6 @@
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-lambda-java-events</artifactId>
             <version>3.13.0</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-            <version>${jackson.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-simple</artifactId>
-            <version>2.0.13</version>
         </dependency>
     </dependencies>
 
@@ -65,15 +51,6 @@
                         </configuration>
                     </execution>
                 </executions>
-            </plugin>
-
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>exec-maven-plugin</artifactId>
-                <version>3.2.0</version>
-                <configuration>
-                    <mainClass>com.mauadev.BattlesnakeJavalinTemplateApp</mainClass>
-                </configuration>
             </plugin>
         </plugins>
     </build>

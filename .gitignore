@@ -6,6 +6,14 @@ target
 .settings
 .vscode
 *.iml
+.lambda_output
+lambda_output
+.terraform/
+*.tfstate
+*.tfstate.backup
+.terraform.lock.hcl
+crash.log
+.DS_Store
 
 # CDK asset staging directory
 .cdk.staging
