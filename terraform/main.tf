@@ -1,11 +1,11 @@
-# ---- configurando backend remoto para guardar o state
+# ---- configurando backend remoto para guardar o tfstate ------
 terraform {
 
   cloud {
-    organization = "DevCoisas" # Use o nome da organização que você criou no Passo 1
+    organization = "DevCoisas" 
 
     workspaces {
-      name = "BattleSnake" # Use o nome do workspace que você criou no Passo 1
+      name = "BattleSnake"
     }
   }
 
@@ -37,17 +37,19 @@ data "aws_iam_policy_document" "assume_role" {
   }
 }
 
+# permissao
 resource "aws_iam_role" "lambda_role_name" {
   name               = "lambda_execution_role_test_BSnake"
   assume_role_policy = data.aws_iam_policy_document.assume_role.json
 }
 
-# anexa a politica de execucao a role para permitir logs no CloudWatch
+# anexando a permissao a uma politica eu acho
 resource "aws_iam_role_policy_attachment" "lambda_exec_policy" {
   role       = aws_iam_role.lambda_role_name.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
+# criando a funcao lambda
 resource "aws_lambda_function" "lambda_battle_snake_java" {
   function_name = "BattleSnakeJavaLambda"
 
@@ -63,17 +65,20 @@ resource "aws_lambda_function" "lambda_battle_snake_java" {
 
 # ---- configurando o api gateway ----
 
+# instanciando o api gateway
 resource "aws_api_gateway_rest_api" "api" {
   name        = "ServerlessMauadevBattlesnakeApi"
   description = "API para a funcao lambda do battle snake"
 }
 
+# uma rota comum "/endpoint"
 resource "aws_api_gateway_resource" "resource" {
   rest_api_id = aws_api_gateway_rest_api.api.id
   parent_id   = aws_api_gateway_rest_api.api.root_resource_id
   path_part   = "endpoint"
 }
 
+# metodo para o endpoint
 resource "aws_api_gateway_method" "method" {
   rest_api_id   = aws_api_gateway_rest_api.api.id
   resource_id   = aws_api_gateway_resource.resource.id
@@ -81,6 +86,7 @@ resource "aws_api_gateway_method" "method" {
   authorization = "NONE"
 }
 
+# configurando a interacao do api gateway com os recursos / metodos eu acho
 resource "aws_api_gateway_integration" "integration" {
   rest_api_id             = aws_api_gateway_rest_api.api.id
   resource_id             = aws_api_gateway_resource.resource.id
@@ -90,6 +96,7 @@ resource "aws_api_gateway_integration" "integration" {
   uri                     = aws_lambda_function.lambda_battle_snake_java.invoke_arn
 }
 
+# adicionando permiossoes na lambda para o apigateway poder executala
 resource "aws_lambda_permission" "api_gateway_permission" {
   statement_id  = "AllowAPIGatewayToInvoke"
   action        = "lambda:InvokeFunction"
@@ -98,6 +105,7 @@ resource "aws_lambda_permission" "api_gateway_permission" {
   source_arn    = "${aws_api_gateway_rest_api.api.execution_arn}/*/${aws_api_gateway_method.method.http_method}${aws_api_gateway_resource.resource.path}"
 }
 
+# nao sei
 resource "aws_api_gateway_deployment" "deployment" {
   rest_api_id = aws_api_gateway_rest_api.api.id
   triggers = {
@@ -112,13 +120,15 @@ resource "aws_api_gateway_deployment" "deployment" {
   }
 }
 
+# configurando o stage
 resource "aws_api_gateway_stage" "stage" {
   deployment_id = aws_api_gateway_deployment.deployment.id
   rest_api_id   = aws_api_gateway_rest_api.api.id
   stage_name    = "dev"
 }
 
+# output da url
 output "api_url" {
-  value       = "${aws_api_gateway_stage.stage.invoke_url}${aws_api_gateway_resource.resource.path_part}"
+  value       = "${aws_api_gateway_stage.stage.invoke_url}/${aws_api_gateway_resource.resource.path_part}"
   description = "URL para invocar a função Lambda."
 }
