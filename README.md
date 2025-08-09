@@ -181,6 +181,8 @@ O `Handler.java` implementa a interface do **AWS Lambda RequestHandler**, recebe
 - Usa **Gson** para converter objetos Java para JSON
 - Usa **APIGatewayProxyRequestEvent** e **APIGatewayProxyResponseEvent** para receber/enviar dados
 
+- **Documentação oficial do battlesnake!!!!!** → https://docs.battlesnake.com/api
+
 ---
 
 ## 🧪 Testando localmente
@@ -199,8 +201,5 @@ curl -X POST https://<SEU_API_GATEWAY_URL>/end -d '{}'
 ## 📌 Observações
 
 - O método `handleMove()` deve conter a inteligência do jogo.  
-- No deploy da AWS Lambda, o **Handler** deve ser exatamente:
-  ```
-  com.mauadev.code.Handler::handleRequest
-  ```
 - O uso do **maven-shade-plugin** é obrigatório para empacotar todas as dependências no JAR final.
+- **EVITE** adicionar mais dependencias, pois o shade plugin empacota **todas as dependencias** em um JAR, tornando-o **talvez muito pesado** para o deploy!!!
