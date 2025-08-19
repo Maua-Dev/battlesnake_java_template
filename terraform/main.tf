@@ -5,7 +5,7 @@ terraform {
     organization = "DevCoisas" 
 
     workspaces {
-      prefix = "battlesnake-"
+      name = "battlesnake-template-default"
     }
   }
 
