@@ -1,11 +1,11 @@
 # ---- configurando backend remoto para guardar o tfstate ------
 terraform {
 
-  cloud {
+  backend "remote" {
     organization = "DevCoisas" 
 
     workspaces {
-      name = "BattleSnake"
+      prefix = "battlesnake-"
     }
   }
 
