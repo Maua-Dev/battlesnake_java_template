@@ -5,7 +5,7 @@ terraform {
     organization = "DevCoisas" 
 
     workspaces {
-      name = "BattleSnake"
+      name = "BattleSnake-${ var.project_name }"
     }
   }
 
@@ -20,7 +20,7 @@ terraform {
 
 # ----- configurando o provedor -----
 provider "aws" {
-  region = "sa-east-1"
+  region = "us-west-2"
 }
 
 # ------ configurando a funcao lambda ------
@@ -39,7 +39,7 @@ data "aws_iam_policy_document" "assume_role" {
 
 # permissao
 resource "aws_iam_role" "lambda_role_name" {
-  name               = "lambda_execution_role_test_BSnake"
+  name               = "lambda_role_battlesnake-${var.project_name}_${var.environment}"
   assume_role_policy = data.aws_iam_policy_document.assume_role.json
 }
 
@@ -51,7 +51,7 @@ resource "aws_iam_role_policy_attachment" "lambda_exec_policy" {
 
 # criando a funcao lambda
 resource "aws_lambda_function" "lambda_battle_snake_java" {
-  function_name = "BattleSnakeJavaLambda"
+  function_name = "${var.project_name}-lambda-${var.environment}"
 
   filename = "../target/battlesnake-lambda-1.0.jar"
 
@@ -67,7 +67,7 @@ resource "aws_lambda_function" "lambda_battle_snake_java" {
 
 # instanciando o api gateway
 resource "aws_api_gateway_rest_api" "api" {
-  name        = "ServerlessMauadevBattlesnakeApi"
+  name        = "api-battlesnake-${var.project_name}-${var.environment}"
   description = "API para a funcao lambda do battle snake"
 }
 

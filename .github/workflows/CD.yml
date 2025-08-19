@@ -3,15 +3,15 @@ name: CD with Terraform
 on:
   push:
     branches:
-      - prod
       - dev
-      - homolog
 
 jobs:
   DeployToAwsWithTerraform:
 
     env:
       TF_TOKEN_app_terraform_io: ${{ secrets.TF_API_TOKEN }}
+      TF_CLOUD_ORGANIZATION: "DevCoisas"
+      TFC_WORKSPACE_NAME: "BattleSnake"
     
     environment:
       name: ${{ github.ref_name }}
@@ -50,10 +50,21 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: 1.6.6 
+          terraform_version: 1.6.6
 
       - name: Terraform Init
         run: terraform init
+
+      - name: Determine and Select Terraform Workspace
+        id: workspace
+        run: |
+          REPO_NAME=${{ github.event.repository.name }}
+
+          echo "Project name is: $REPO_NAME"
+          
+          echo "name=$REPO_NAME" >> "$GITHUB_OUTPUT"
+          
+          terraform workspace select $REPO_NAME || terraform workspace new $REPO_NAME
 
       - name: Terraform Validate
         run: terraform validate
