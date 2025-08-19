@@ -5,7 +5,7 @@ terraform {
     organization = "DevCoisas" 
 
     workspaces {
-      name = "BattleSnake-${ var.project_name }"
+      name = "BattleSnake"
     }
   }
 
