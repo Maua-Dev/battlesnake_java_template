@@ -59,7 +59,7 @@ jobs:
 
           echo "Project name is: $REPO_NAME"
           
-          echo "name=$REPO_NAME" >> "$GITHUB_ENV"
+          echo "REPO_NAME=$REPO_NAME" >> "$GITHUB_ENV"
 
       - name: Terraform Init
         run: terraform init
