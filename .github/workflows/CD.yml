@@ -59,14 +59,14 @@ jobs:
 
           echo "Project name is: $REPO_NAME"
           
-          echo "name=$REPO_NAME" >> "$GITHUB_OUTPUT"
+          echo "name=$REPO_NAME" >> "$GITHUB_ENV"
 
       - name: Terraform Init
         run: terraform init
 
       - name: Configure and Create Terraform Workspace
         run: |
-          terraform workspace select $REPO_NAME || terraform workspace new $REPO_NAME
+          terraform workspace select ${{ env.REPO_NAME }}  || terraform workspace new ${{ env.REPO_NAME }}
 
       - name: Terraform Validate
         run: terraform validate
