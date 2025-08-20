@@ -1,4 +1,13 @@
 terraform {
+
+cloud {
+    organization = "DevCoisas"
+
+    workspaces {
+      name = "meta-workspace-management"
+    }
+  }
+
   required_providers {
     tfe = {
       source  = "hashicorp/tfe"
