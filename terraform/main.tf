@@ -3,10 +3,6 @@ terraform {
 
   backend "remote" {
     organization = "DevCoisas"
-
-    workspaces {
-      name = "battlesnake-template-default"
-    }
     
   }
 
