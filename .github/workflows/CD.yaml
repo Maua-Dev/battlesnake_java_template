@@ -30,6 +30,7 @@ jobs:
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 1.6.6 
+          cli_config_credentials_token: ${{ secrets.TFE_API_TOKEN }}
 
       - name: 'Phase 1: Bootstrap TFC Workspace'
         id: bootstrap
