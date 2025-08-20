@@ -71,4 +71,4 @@ jobs:
           terraform init
           
           # O estado será gerenciado pelo Terraform Cloud
-          terraform apply -auto-approve
+          terraform apply -auto-approve -var="project_name=$WORKSPACE_NAME"
