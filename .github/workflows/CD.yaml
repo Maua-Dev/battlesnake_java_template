@@ -33,13 +33,14 @@ jobs:
 
       - name: 'Phase 1: Bootstrap TFC Workspace'
         id: bootstrap
+        shell: bash
         working-directory: ./terraform/bootstrap
         env:
           # Token do TFC com permissão para criar workspaces
           TFE_TOKEN: ${{ secrets.TFE_API_TOKEN }}
         run: |
 
-          WORKSPACE_NAME="${{ github.repository }}"
+          WORKSPACE_NAME="${{ github.event.repository.name }}"
           echo "Workspace a ser criado/assegurado: $WORKSPACE_NAME"
           
           # Este init usa o backend local (padrão), pois não há bloco de backend aqui
