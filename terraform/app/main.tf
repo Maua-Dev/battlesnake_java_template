@@ -4,14 +4,6 @@ terraform {
   cloud {
     organization = "DevCoisas"
     
-    workspaces {
-      # O nome do workspace será passado dinamicamente
-      # O Terraform Cloud irá preencher isso automaticamente quando
-      # a execução for iniciada pelo VCS. Para execuções via CLI,
-      # usaremos a variável de ambiente TF_WORKSPACE.
-      name = "placeholder" # Este valor será sobrescrito
-    }
-    
   }
 
   required_providers {
