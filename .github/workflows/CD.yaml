@@ -62,7 +62,7 @@ jobs:
         env:
           # Token para autenticar com o backend remoto do TFC
           TFE_TOKEN: ${{ secrets.TFE_API_TOKEN }}
-          TF_WORKSPACE: ${{ github.repository }}
+          TF_WORKSPACE: ${{ github.event.repository.name }}
         run: |
           # Este init vai se conectar ao backend remoto no workspace criado na Fase 1
           terraform init
