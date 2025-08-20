@@ -38,6 +38,8 @@ jobs:
         env:
           # Token do TFC com permissão para criar workspaces
           TFE_TOKEN: ${{ secrets.TFE_API_TOKEN }}
+          TF_API_TOKEN: ${{ secrets.TFE_API_TOKEN }}
+          TF_TOKEN: ${{ secrets.TFE_API_TOKEN }}
         run: |
 
           WORKSPACE_NAME="${{ github.event.repository.name }}"
