@@ -3,6 +3,10 @@ terraform {
 
   backend "remote" {
     organization = "DevCoisas"
+
+    workspaces {
+      name = "default"
+    }
     
   }
 
