@@ -1,4 +1,4 @@
-name: CD with Terraform
+name: Deploy Infrastructure (Self-Bootstrapping)
 
 on:
   push:
@@ -7,73 +7,64 @@ on:
 
 jobs:
   DeployToAwsWithTerraform:
-
-    env:
-      TF_TOKEN_app_terraform_io: ${{ secrets.TF_API_TOKEN }}
-      TF_CLOUD_ORGANIZATION: "DevCoisas"
-      TFC_WORKSPACE_NAME: "BattleSnake"
-    
-    environment:
-      name: ${{ github.ref_name }}
-
     runs-on: ubuntu-latest
-
-    defaults:
-      run:
-        working-directory: ./terraform
-
     permissions:
-      id-token: write
+      id-token: write   # Necessário para autenticação com a AWS via OIDC
       contents: read
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17 (includes Maven)
+      - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
-            distribution: 'temurin'
-            java-version: '17'
-            cache: 'maven'
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'maven'
 
       - name: Build Java project with Maven
-        run: cd .. && mvn clean package
-
-      - name: Setup AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-region: ${{ vars.AWS_REGION }}
-          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/GithubActionsRole
-          role-session-name: github-action-terraform
+        run: mvn clean package
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: 1.6.6
+          terraform_version: 1.6.6 
 
-      - name: Determine and Select Terraform Workspace
-        id: workspace
+      - name: 'Phase 1: Bootstrap TFC Workspace'
+        id: bootstrap
+        working-directory: ./terraform/bootstrap
+        env:
+          # Token do TFC com permissão para criar workspaces
+          TFE_TOKEN: ${{ secrets.TFE_API_TOKEN }}
         run: |
-          REPO_NAME=${{ github.event.repository.name }}
 
-          echo "Project name is: $REPO_NAME"
+          WORKSPACE_NAME="${{ github.repository }}"
+          echo "Workspace a ser criado/assegurado: $WORKSPACE_NAME"
           
-          echo "REPO_NAME=$REPO_NAME" >> "$GITHUB_ENV"
+          # Este init usa o backend local (padrão), pois não há bloco de backend aqui
+          terraform init
+          
+          # O apply cria o recurso tfe_workspace no Terraform Cloud
+          terraform apply -auto-approve -var="workspace_name=$WORKSPACE_NAME"
 
-      - name: Terraform Init
-        run: terraform init
+      - name: 'Phase 2: Configure AWS Credentials'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ${{ 'us-west-2' }}
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/GithubActionsRole
+          role-session-name: github-action-terraform-deploy
 
-      - name: Configure and Create Terraform Workspace
+      - name: 'Phase 2: Deploy Application via TFC'
+        id: deploy_app
+        working-directory: ./terraform/app
+        env:
+          # Token para autenticar com o backend remoto do TFC
+          TFE_TOKEN: ${{ secrets.TFE_API_TOKEN }}
+          TF_WORKSPACE: ${{ github.repository }}
         run: |
-          terraform workspace select ${{ env.REPO_NAME }}  || terraform workspace new ${{ env.REPO_NAME }}
-
-      - name: Terraform Validate
-        run: terraform validate
-
-      - name: Terraform Plan
-        run: terraform plan
-
-      - name: Terraform Apply
-        if: github.event_name == 'push'
-        run: terraform apply -auto-approve
+          # Este init vai se conectar ao backend remoto no workspace criado na Fase 1
+          terraform init
+          
+          # O estado será gerenciado pelo Terraform Cloud
+          terraform apply -auto-approve
