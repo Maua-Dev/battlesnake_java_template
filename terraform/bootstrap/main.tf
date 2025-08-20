@@ -47,9 +47,4 @@ resource "tfe_workspace" "this" {
   working_directory = "terraform/app" # Aponta para onde o código da app está
   terraform_version = "1.6.6"
 
-  vcs_repo {
-    identifier     = var.repo_identifier # Ex: "SuaOrg/battlesnake-cliente-A"
-    oauth_token_id = data.tfe_oauth_client.github.oauth_token_id
-    branch         = "dev"
-  }
 }
