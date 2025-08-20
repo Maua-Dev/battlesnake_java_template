@@ -2,7 +2,12 @@
 terraform {
 
   backend "remote" {
-    organization = "DevCoisas" 
+    organization = "DevCoisas"
+
+    workspaces {
+      prefix = "battlesnakews-"
+    }
+    
   }
 
   required_providers {
