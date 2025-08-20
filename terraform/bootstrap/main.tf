@@ -41,6 +41,6 @@ resource "tfe_workspace" "this" {
   vcs_repo {
     identifier     = var.repo_identifier # Ex: "SuaOrg/battlesnake-cliente-A"
     oauth_token_id = data.tfe_oauth_client.github.oauth_token_id
-    branch         = "main"
+    branch         = "dev"
   }
 }
