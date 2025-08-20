@@ -50,13 +50,13 @@ resource "aws_iam_role_policy_attachment" "lambda_exec_policy" {
 resource "aws_lambda_function" "lambda_battle_snake_java" {
   function_name = "${var.project_name}-lambda-${var.environment}"
 
-  filename = "../target/battlesnake-lambda-1.0.jar"
+  filename = "../../target/battlesnake-lambda-1.0.jar"
 
   role    = aws_iam_role.lambda_role_name.arn
   handler = "com.mauadev.code.Handler::handleRequest"
   runtime = "java17"
 
-  source_code_hash = filebase64sha256("../target/battlesnake-lambda-1.0.jar")
+  source_code_hash = filebase64sha256("../../target/battlesnake-lambda-1.0.jar")
 }
 
 
