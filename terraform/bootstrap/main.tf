@@ -20,6 +20,11 @@ variable "tfe_organization" {
   default = "DevCoisas"
 }
 
+variable "repo_identifier" {
+  type        = string
+  description = "O identificador completo do repositório no GitHub (ex: Owner/Repo)."
+}
+
 # Encontra o ID da conexão com o VCS (GitHub) automaticamente pelo nome
 data "tfe_oauth_client" "github" {
   organization = var.tfe_organization
@@ -34,7 +39,7 @@ resource "tfe_workspace" "this" {
   terraform_version = "1.6.6"
 
   vcs_repo {
-    identifier     = var.workspace_name # Ex: "SuaOrg/battlesnake-cliente-A"
+    identifier     = var.repo_identifier # Ex: "SuaOrg/battlesnake-cliente-A"
     oauth_token_id = data.tfe_oauth_client.github.oauth_token_id
     branch         = "main"
   }

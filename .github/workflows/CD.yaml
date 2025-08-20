@@ -47,7 +47,7 @@ jobs:
           terraform init
           
           # O apply cria o recurso tfe_workspace no Terraform Cloud
-          terraform apply -auto-approve -var="workspace_name=$WORKSPACE_NAME"
+          terraform apply -auto-approve -var="workspace_name=$WORKSPACE_NAME" -var="repo_identifier=${{ github.repository }}"
 
       - name: 'Phase 2: Configure AWS Credentials'
         uses: aws-actions/configure-aws-credentials@v4
