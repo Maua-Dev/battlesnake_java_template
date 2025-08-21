@@ -1,13 +1,8 @@
-# ---- configurando backend remoto para guardar o tfstate ------
 terraform {
-
-  backend "remote" {
-    organization = "DevCoisas"
-
-    workspaces {
-      name = "default"
-    }
-    
+  backend "s3" {
+    key            = "app/battlesnake-lambda-dev/terraform.tfstate"
+    region         = "us-west-2"
+    encrypt        = true # Garante que o estado seja criptografado no S3
   }
 
   required_providers {

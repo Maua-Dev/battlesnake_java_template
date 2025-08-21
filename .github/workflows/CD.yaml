@@ -6,11 +6,57 @@ on:
       - dev
 
 jobs:
-  DeployToAwsWithTerraform:
+  BootstrapBucketCreation:
+    name: Bootstrap
     runs-on: ubuntu-latest
     permissions:
       id-token: write
       contents: read
+
+    outputs:
+      s3_bucket_name: ${{ steps.bootstrap.outputs.s3_bucket_name }}
+      dynamo_table_name: ${{ steps.bootstrap.outputs.dynamo_table_name }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 'Configure AWS Credentials'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: 'us-west-2'
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/GithubActionsRole
+          role-session-name: github-action-terraform-deploy
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.6 
+          cli_config_credentials_token: ${{ secrets.TFE_API_TOKEN }}
+
+      - name: 'Bootstrap S3 State Bucket'
+        id: bootstrap
+        shell: bash
+        working-directory: ./terraform/bootstrap
+        run: |
+          WORKSPACE_NAME="${{ github.event.repository.name }}"
+          echo "Workspace a ser criado/assegurado: $WORKSPACE_NAME"
+          
+          terraform init
+          
+          terraform apply -auto-approve -var="workspace_name=$WORKSPACE_NAME" -var="repo_identifier=${{ github.repository }}"
+
+          echo "s3_bucket_name=$(terraform output -raw s3_bucket_name)" >> $GITHUB_OUTPUT
+          echo "dynamo_table_name=$(terraform output -raw dynamodb_table_name)" >> $GITHUB_OUTPUT
+
+  deploy_app:
+    name: 'Deploy | Deploy Application'
+    runs-on: ubuntu-latest
+    needs: BootstrapBucketCreation 
+
+    defaults:
+      run:
+        working-directory: ./terraform/app 
 
     steps:
       - name: Checkout repository
@@ -26,39 +72,24 @@ jobs:
       - name: Build Java project with Maven
         run: mvn clean package
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: 1.6.6 
-          cli_config_credentials_token: ${{ secrets.TFE_API_TOKEN }}
-
-      - name: 'Phase 1: Bootstrap TFC Workspace'
-        id: bootstrap
-        shell: bash
-        working-directory: ./terraform/bootstrap
-        run: |
-          WORKSPACE_NAME="${{ github.event.repository.name }}"
-          echo "Workspace a ser criado/assegurado: $WORKSPACE_NAME"
-          
-          terraform init
-          
-          terraform apply -auto-approve -var="workspace_name=$WORKSPACE_NAME" -var="repo_identifier=${{ github.repository }}"
-
-      - name: 'Phase 2: Configure AWS Credentials'
+      - name: 'Configure AWS Credentials'
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-region: 'us-west-2'
           role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/GithubActionsRole
           role-session-name: github-action-terraform-deploy
 
-      - name: 'Phase 2: Deploy Application via TFC'
-        id: deploy_app
-        working-directory: ./terraform/app
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.6 
+          cli_config_credentials_token: ${{ secrets.TFE_API_TOKEN }}
+      
+      - name: Terraform Init with Dynamic Backend
         run: |
-          # A variável TF_WORKSPACE é exportada dentro do próprio script.
-          export TF_WORKSPACE="${{ github.event.repository.name }}"
-          
-          terraform init
-          
-          # Passamos a variável do nome do projeto, que pode ser a mesma do workspace
-          terraform apply -auto-approve -var="project_name=${{ github.event.repository.name }}"
+          terraform init \
+            -backend-config="bucket=${{ needs.BootstrapBucketCreation.outputs.s3_bucket_name }}" \
+            -backend-config="dynamodb_table=${{ needs.BootstrapBucketCreation.outputs.dynamo_table_name }}"
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve

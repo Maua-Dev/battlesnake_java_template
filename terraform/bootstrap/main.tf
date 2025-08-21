@@ -1,50 +1,69 @@
+
 terraform {
-
-cloud {
-    organization = "DevCoisas"
-
-    workspaces {
-      name = "meta-workspace-management"
-    }
-  }
-
   required_providers {
-    tfe = {
-      source  = "hashicorp/tfe"
-      version = "~> 0.50.0"
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
     }
   }
 }
 
-provider "tfe" {
+provider "aws" {
+  region = "us-west-2" 
 }
 
-variable "workspace_name" {
+variable "project_name" {
+  description = "Nome do projeto para o backend (ex: battlesnake)."
   type        = string
-  description = "O nome do workspace a ser criado no TFC."
+  default     = "battlesnake"
 }
 
-variable "tfe_organization" {
-  type    = string
-  default = "DevCoisas"
-}
-
-variable "repo_identifier" {
+variable "environment" {
+  description = "Ambiente para o backend (ex: tfstate)."
   type        = string
-  description = "O identificador completo do repositório no GitHub (ex: Owner/Repo)."
+  default     = "tfstate"
 }
 
-# Encontra o ID da conexão com o VCS (GitHub) automaticamente pelo nome
-data "tfe_oauth_client" "github" {
-  organization = var.tfe_organization
-  name         = "GitHub" # Ou o nome que você deu para a sua conexão com o VCS
+resource "aws_s3_bucket" "terraform_state" {
+  bucket = "${var.project_name}-terraform-state-battlesnake-${var.environment}"
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
-resource "tfe_workspace" "this" {
-  name              = var.workspace_name
-  organization      = var.tfe_organization
-  auto_apply        = true
-  working_directory = "terraform/app" # Aponta para onde o código da app está
-  terraform_version = "1.6.6"
+resource "aws_s3_bucket_versioning" "versioning_example" {
+  bucket = aws_s3_bucket.terraform_state.id
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
 
+resource "aws_s3_bucket_public_access_block" "block_public" {
+  bucket                  = aws_s3_bucket.terraform_state.id
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+resource "aws_dynamodb_table" "terraform_locks" {
+  name         = "${var.project_name}-terraform-locks-${var.environment}"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "LockID"
+
+  attribute {
+    name = "LockID"
+    type = "S"
+  }
+}
+
+output "s3_bucket_name" {
+  description = "O nome do bucket S3 criado para o estado do Terraform."
+  value       = aws_s3_bucket.terraform_state.id
+}
+
+output "dynamodb_table_name" {
+  description = "O nome da tabela DynamoDB para travamento de estado."
+  value       = aws_dynamodb_table.terraform_locks.name
 }

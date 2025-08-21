@@ -9,3 +9,8 @@ variable "environment" {
   default     = "dev"
 }
 
+variable "state_bucket_name" {
+  type = string
+  description = "Variavel contendo o nome do bucket que armazenará o state"
+}
+
