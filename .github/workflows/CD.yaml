@@ -1,4 +1,4 @@
-name: Deploy Infrastructure (Self-Bootstrapping)
+name: Deploy Infrastructure
 
 on:
   push:
