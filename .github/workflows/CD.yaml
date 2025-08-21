@@ -51,7 +51,7 @@ jobs:
 
   build_java:
     name: Build Java Application
-    runs-on: ubunto-latest
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
