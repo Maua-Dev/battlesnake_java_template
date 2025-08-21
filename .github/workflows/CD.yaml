@@ -128,4 +128,5 @@ jobs:
             -backend-config="key=$APP_TERRAFORM_KEY"
 
       - name: Terraform Apply
-        run: terraform apply -auto-approve
+        run: terraform apply -auto-approve \
+            -var="project_name=$WORKSPACE_NAME" 
