@@ -25,7 +25,7 @@ variable "environment" {
 }
 
 resource "aws_s3_bucket" "terraform_state" {
-  bucket = "${var.project_name}-terraform-state-battlesnake-${var.environment}"
+  bucket = replace("${var.project_name}-terraform-state-${var.environment}", "_", "-")
 
   lifecycle {
     prevent_destroy = true
