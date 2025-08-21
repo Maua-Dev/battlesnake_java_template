@@ -124,7 +124,7 @@ jobs:
 
           terraform init \
             -backend-config="bucket=${{ needs.BootstrapBucketCreation.outputs.s3_bucket_name }}" \
-            -backend-config="dynamodb_table=${{ needs.BootstrapBucketCreation.outputs.dynamo_table_name }}"
+            -backend-config="dynamodb_table=${{ needs.BootstrapBucketCreation.outputs.dynamo_table_name }}" \
             -backend-config="key=$APP_TERRAFORM_KEY"
 
       - name: Terraform Apply
