@@ -1,5 +1,11 @@
 
 terraform {
+  backend "s3" {
+    bucket         = "battle-snake-bootstrap-state"
+    dynamodb_table = "battle-snake-bootstrap-state-table"
+    region         = "us-west-2"
+    encrypt        = true
+  }
   required_providers {
     aws = {
       source  = "hashicorp/aws"

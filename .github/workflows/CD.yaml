@@ -41,10 +41,13 @@ jobs:
         run: |
           WORKSPACE_NAME="${{ github.event.repository.name }}"
           echo "Workspace a ser criado/assegurado: $WORKSPACE_NAME"
+          BOOTSTRAP_TERRAFORM_KEY="bootstrap/${WORKSPACE_NAME}/terraform.tfstate"
+          echo "Key para o bucket: $BOOTSTRAP_TERRAFORM_KEY"
+
+          terraform init -backend-config="key=$BOOTSTRAP_TERRAFORM_KEY"
           
-          terraform init
-          
-          terraform apply -auto-approve -var="project_name=$WORKSPACE_NAME"
+          terraform apply -auto-approve \
+            -var="project_name=$WORKSPACE_NAME" \
 
           echo "s3_bucket_name=$(terraform output -raw s3_bucket_name)" >> $GITHUB_OUTPUT
           echo "dynamo_table_name=$(terraform output -raw dynamodb_table_name)" >> $GITHUB_OUTPUT
@@ -108,9 +111,16 @@ jobs:
       
       - name: Terraform Init with Dynamic Backend
         run: |
+
+          WORKSPACE_NAME="${{ github.event.repository.name }}"
+          echo "Workspace a ser criado/assegurado: $WORKSPACE_NAME"
+          APP_TERRAFORM_KEY="bootstrap/${WORKSPACE_NAME}/terraform.tfstate"
+          echo "Key para o bucket: $APP_TERRAFORM_KEY"
+
           terraform init \
             -backend-config="bucket=${{ needs.BootstrapBucketCreation.outputs.s3_bucket_name }}" \
             -backend-config="dynamodb_table=${{ needs.BootstrapBucketCreation.outputs.dynamo_table_name }}"
+            -backend-config="key=$APP_TERRAFORM_KEY"
 
       - name: Terraform Apply
         run: terraform apply -auto-approve
