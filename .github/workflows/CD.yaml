@@ -83,6 +83,10 @@ jobs:
     runs-on: ubuntu-latest
     needs: [BootstrapBucketCreation, build_java] 
 
+    permissions:      
+      id-token: write
+      contents: read
+
     defaults:
       run:
         working-directory: ./terraform/app 
