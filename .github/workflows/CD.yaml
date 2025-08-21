@@ -119,7 +119,7 @@ jobs:
 
           WORKSPACE_NAME="${{ github.event.repository.name }}"
           echo "Workspace a ser criado/assegurado: $WORKSPACE_NAME"
-          APP_TERRAFORM_KEY="bootstrap/${WORKSPACE_NAME}/terraform.tfstate"
+          APP_TERRAFORM_KEY="app/${WORKSPACE_NAME}/terraform.tfstate"
           echo "Key para o bucket: $APP_TERRAFORM_KEY"
 
           terraform init \

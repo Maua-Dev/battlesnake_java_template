@@ -1,6 +1,5 @@
 terraform {
   backend "s3" {
-    bucket         = "battlesnake-java-template-terraform-state-tfstate"
     # app/battlesnake-lambda-dev/terraform.tfstate key
     region         = "us-west-2"
     encrypt        = true # Garante que o estado seja criptografado no S3
