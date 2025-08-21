@@ -128,4 +128,6 @@ jobs:
             -backend-config="key=$APP_TERRAFORM_KEY"
 
       - name: Terraform Apply
-        run: terraform apply -auto-approve -var="project_name=${{ github.event.repository.name }}" -var="environment=dev"
+        run: terraform apply -auto-approve \
+          -var="project_name=${{ github.event.repository.name }}" \
+          -var="environment=dev" \
