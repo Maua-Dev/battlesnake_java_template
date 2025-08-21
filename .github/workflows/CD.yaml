@@ -44,7 +44,7 @@ jobs:
           
           terraform init
           
-          terraform apply -auto-approve -var="workspace_name=$WORKSPACE_NAME" -var="repo_identifier=${{ github.repository }}"
+          terraform apply -auto-approve -var="project_name=$WORKSPACE_NAME"
 
           echo "s3_bucket_name=$(terraform output -raw s3_bucket_name)" >> $GITHUB_OUTPUT
           echo "dynamo_table_name=$(terraform output -raw dynamodb_table_name)" >> $GITHUB_OUTPUT
