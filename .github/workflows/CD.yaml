@@ -55,6 +55,7 @@ jobs:
   build_java:
     name: Build Java Application
     runs-on: ubuntu-latest
+    needs: BootstrapBucketCreation
 
     steps:
       - name: Checkout repository
