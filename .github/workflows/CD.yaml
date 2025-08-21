@@ -129,4 +129,4 @@ jobs:
 
       - name: Terraform Apply
         run: terraform apply -auto-approve \
-            -var="project_name=$WORKSPACE_NAME" 
+            -var="project_name=${{ github.event.repository.name }}" 
