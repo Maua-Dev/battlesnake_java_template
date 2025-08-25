@@ -22,9 +22,12 @@ Ele foi escrito para rodar na AWS sem necessidade de servidor próprio, usando *
   # Linux (apt)
   sudo apt install maven
   ```
+  [Alternative Guide for Windows Without choco](https://maven.apache.org/guides/getting-started/windows-prerequisites.html)
 
-- Conta na **AWS** e **AWS CLI** configurada (`aws configure`)
 - Conhecimento básico sobre **API Gateway** e **Lambda**
+- Conhecimento básico sobre **Java** 
+- Conhecimento básico sobre **API**
+- **Disposicão, Competitividade e Força de Vontade!**
 
 ---
 
@@ -41,7 +44,7 @@ O projeto segue a estrutura **Maven Standard Directory Layout**:
 │   │   │   └── com
 │   │   │       └── mauadev
 │   │   │           └── code
-│   │   │               └── Handler.java   # Código principal
+│   │   │               └── Handler.java   # Código principal!!!
 │   │   └── resources
 │   │       └── (se necessário, arquivos de configuração)
 │   └── test
@@ -52,7 +55,7 @@ O projeto segue a estrutura **Maven Standard Directory Layout**:
 
 ## ⚙️ Dependências (`pom.xml`)
 
-Um `pom.xml` mínimo para rodar este projeto seria:
+O `pom.xml` padrão para rodar este projeto:
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -121,22 +124,52 @@ Um `pom.xml` mínimo para rodar este projeto seria:
 
 ---
 
-## 🚀 Como compilar e empacotar
+## 🚀 Como começar
 
-```bash
-# Baixar dependências e compilar
-mvn clean install
+### 📦 Criar o repositório
 
-# Criar um JAR empacotado para AWS Lambda
-mvn package
+1.  Vá até o repositório
+    [**Setup**](https://github.com/Maua-Dev/devmaua_setup), acesse a aba
+    **Issues** e abra uma nova issue.
+
+    -   Escolha os parâmetros conforme mostrado nas imagens:\
+        ![Exemplo de criação de issue](images/issue.png)\
+        ![Exemplo de
+        seleção](images/Screenshot%202025-08-25%20at%2010.36.38.png)
+
+2.  Após abrir a issue, o repositório será criado automaticamente dentro
+    da organização.\
+    \> ⏳ Aguarde cerca de **1 minuto** e depois verifique em
+    [Repositórios da
+    organização](https://github.com/orgs/Maua-Dev/repositories).
+
+3.  Clone o repositório criado na sua máquina:
+
+    ``` bash
+    # Na pasta em que deseja trabalhar, execute:
+    git clone https://www.github.com/Maua-Dev/Nome_Do_Seu_Repositorio
+
+    # Acesse a pasta do projeto
+    cd Nome_Do_Seu_Repositorio
+
+    # Instale as dependências
+    mvn clean install
+    ```
+
+4.  Agora é só começar a programar sua cobra 🐍!
+
+### 🧪 Testando seu código
+
+Quando quiser testar ou salvar o progresso:
+
+``` bash
+git add ./
+git commit -m "sua mensagem de commit"
+git push origin dev
 ```
 
-O JAR final ficará em:
-```
-target/battlesnake-lambda-1.0-SNAPSHOT-shaded.jar
-```
-
----
+Depois disso, acesse o repositório do seu projeto no GitHub para obter o
+**link da API** gerada automaticamente.
 
 ## ☁️ Deploy na AWS Lambda
 
