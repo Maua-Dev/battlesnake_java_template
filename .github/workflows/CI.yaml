@@ -1,10 +1,10 @@
 name: Execute Tests
 
 on:
-    push:
-        branches:
-            dev
-            tests
+  push:
+    branches:
+      - dev
+      - tests
 
 jobs:
 
