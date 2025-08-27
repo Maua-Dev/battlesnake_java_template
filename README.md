@@ -22,7 +22,8 @@ Ele foi escrito para rodar na AWS sem necessidade de servidor próprio, usando *
   # Linux (apt)
   sudo apt install maven
   ```
-  [Alternative Guide for Windows Without choco](https://maven.apache.org/guides/getting-started/windows-prerequisites.html)
+  [Documentação Para Windows Oficial](https://maven.apache.org/guides/getting-started/windows-prerequisites.html)
+  [Video Tutorial Para Windows](https://www.youtube.com/watch?v=YTvlb6eny_0)
 
 - Conhecimento básico sobre **API Gateway** e **Lambda**
 - Conhecimento básico sobre **Java** 
@@ -55,7 +56,7 @@ O projeto segue a estrutura **Maven Standard Directory Layout**:
 
 ## ⚙️ Dependências (`pom.xml`)
 
-O `pom.xml` padrão para rodar este projeto:
+O `pom.xml`, nosso arquivo de dependencias, padrão para rodar este projeto:
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -71,6 +72,19 @@ O `pom.xml` padrão para rodar este projeto:
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.release>17</maven.compiler.release>
     </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.junit</groupId>
+                <artifactId>junit-bom</artifactId>
+                <version>5.10.2</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
 
     <dependencies>
         <dependency>
@@ -88,6 +102,17 @@ O `pom.xml` padrão para rodar este projeto:
             <artifactId>gson</artifactId>
             <version>2.10.1</version>
         </dependency>
+
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -96,11 +121,12 @@ O `pom.xml` padrão para rodar este projeto:
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.13.0</version>
-                <configuration>
-                    <release>${maven.compiler.release}</release>
-                </configuration>
             </plugin>
-
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.2.5</version>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
@@ -163,9 +189,20 @@ O `pom.xml` padrão para rodar este projeto:
 Quando quiser testar ou salvar o progresso:
 
 ``` bash
+# para testar o projeto com os testes padrões já criados rode:
+mvn test
+# esses testes serão automaticamente executados no GitHub # actions, então fique atento pois caso falhem o seu código não irá
+# gerar o link da api!!!!!!
+```
+
+``` bash
+# para enviar o código para o GitHub basta executar:
 git add ./
 git commit -m "sua mensagem de commit"
+# caso seja o primeiro commit:
 git push origin dev
+# caso contrário: 
+git push
 ```
 
 Depois disso, acesse o repositório do seu projeto no GitHub para obter o
@@ -227,6 +264,12 @@ curl -X GET https://<SEU_API_GATEWAY_URL>/
 curl -X POST https://<SEU_API_GATEWAY_URL>/start -d '{}'
 curl -X POST https://<SEU_API_GATEWAY_URL>/move -d '{}'
 curl -X POST https://<SEU_API_GATEWAY_URL>/end -d '{}'
+```
+
+Ou testar com os tests já criados:
+
+```bash
+mvn test
 ```
 
 ---
