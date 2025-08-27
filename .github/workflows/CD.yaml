@@ -30,6 +30,7 @@ jobs:
   BootstrapBucketCreation:
     name: Bootstrap
     runs-on: ubuntu-latest
+    needs: ExecuteTests
     if: github.ref == 'refs/heads/dev'
     permissions:
       id-token: write
