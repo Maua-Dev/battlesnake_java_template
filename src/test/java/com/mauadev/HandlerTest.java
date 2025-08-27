@@ -54,7 +54,7 @@ public class HandlerTest {
         Map<String, String> body = gson.fromJson(response.getBody(), mapType);
 
         assertEquals("1", body.get("apiversion"));
-        assertNull(body.get("author"));
+        assertNotNull(body.get("author"));
         assertNotNull(body.get("color"));
         assertNotNull(body.get("head"));
         assertNotNull(body.get("tail"));
