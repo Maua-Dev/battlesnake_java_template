@@ -2,9 +2,6 @@ name: Execute Tests
 
 on:
   push:
-    branches:
-      - dev
-      - tests
 
 jobs:
 

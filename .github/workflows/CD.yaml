@@ -1,6 +1,10 @@
 name: Deploy Infrastructure
 
 on:
+  workflow_run:
+    workflows: ["Execute Tests"]
+    types:
+      - completed
   push:
     branches:
       - dev
@@ -9,6 +13,11 @@ jobs:
   BootstrapBucketCreation:
     name: Bootstrap
     runs-on: ubuntu-latest
+    if: >
+      ${{
+        github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.head_branch == 'dev'
+      }}
     permissions:
       id-token: write
       contents: read
