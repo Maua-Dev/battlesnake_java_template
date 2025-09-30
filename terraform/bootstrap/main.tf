@@ -3,7 +3,7 @@ terraform {
   backend "s3" {
     bucket         = "battle-snake-bootstrap-state"
     dynamodb_table = "battle-snake-bootstrap-state-table"
-    region         = "us-west-2"
+    region         = "us-east-1"
     encrypt        = true
   }
   required_providers {
@@ -15,7 +15,7 @@ terraform {
 }
 
 provider "aws" {
-  region = "us-west-2" 
+  region = "us-east-1" 
 }
 
 variable "project_name" {
