@@ -1,8 +1,8 @@
 
 terraform {
   backend "s3" {
-    bucket         = "battle-snake-bootstrap-state"
-    dynamodb_table = "battle-snake-bootstrap-state-table"
+    bucket         = "battle-snake-bootstrap-state-new-account"
+    dynamodb_table = "battle-snake-bootstrap-state-table-new-account"
     region         = "us-east-1"
     encrypt        = true
   }
