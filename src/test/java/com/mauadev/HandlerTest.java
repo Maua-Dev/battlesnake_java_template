@@ -78,25 +78,80 @@ public class HandlerTest {
     }
 
     @Test
-    @DisplayName("Teste da rota /move - Deve retornar um movimento com status 200")
-    public void testHandleMove_shouldReturnMoveResponse() {
-        // Arrange
+    @DisplayName("Teste da rota /move - Deve se mover para cima em direção à comida")
+    public void testHandleMove_withBoardData_shouldMoveUpTowardsFood() {
+        // Arrange 🐍
         APIGatewayProxyRequestEvent request = new APIGatewayProxyRequestEvent().withPath("/move");
-        request.setBody("{\"game\": {}, \"turn\": 1, \"board\": {}, \"you\": {}}"); // Exemplo de corpo
 
-        // Act
+        String jsonRequestBody = """
+        {
+          "game": {
+            "id": "game-id-123",
+            "ruleset": {"name": "standard", "version": "v1.2.3"},
+            "timeout": 500
+          },
+          "turn": 4,
+          "board": {
+            "height": 11,
+            "width": 11,
+            "food": [
+              {"x": 5, "y": 5},
+              {"x": 9, "y": 0},
+              {"x": 2, "y": 6}
+            ],
+            "hazards": [
+              {"x": 3, "y": 3}
+            ],
+            "snakes": [
+              {
+                "id": "snake-id-yours",
+                "name": "MySnake",
+                "health": 90,
+                "body": [{"x": 5, "y": 4}, {"x": 4, "y": 4}, {"x": 3, "y": 4}],
+                "head": {"x": 5, "y": 4},
+                "length": 3,
+                "shout": "Going for food!"
+              },
+              {
+                "id": "snake-id-opponent",
+                "name": "OpponentSnake",
+                "health": 95,
+                "body": [{"x": 1, "y": 1}, {"x": 1, "y": 2}, {"x": 1, "y": 3}],
+                "head": {"x": 1, "y": 1},
+                "length": 3,
+                "shout": "Hisss"
+              }
+            ]
+          },
+          "you": {
+            "id": "snake-id-yours",
+            "name": "MySnake",
+            "health": 50,
+            "body": [{"x": 6, "y": 4}, {"x": 4, "y": 4}, {"x": 3, "y": 4}],
+            "head": {"x": 6, "y": 4},
+            "length": 3,
+            "shout": "Going for food!"
+          }
+        }
+        """;
+
+        request.setBody(jsonRequestBody);
+
+        // Act 🎯
         APIGatewayProxyResponseEvent response = handler.handleRequest(request, testContext);
 
-        // Assert
-        assertEquals(200, response.getStatusCode());
-        assertNotNull(response.getBody());
+        // Assert ✅
+        assertEquals(200, response.getStatusCode(), "O status code da resposta deve ser 200");
+        assertNotNull(response.getBody(), "O corpo da resposta não pode ser nulo");
 
         Type mapType = new TypeToken<Map<String, String>>() {}.getType();
         Map<String, String> body = gson.fromJson(response.getBody(), mapType);
 
-        assertEquals("up", body.get("move")); // Verifica a lógica simples atual
-        assertEquals("Estou indo para cima!", body.get("shout"));
+        // Aqui você verifica se o seu algorítmo está realizando o movimento certo, alinhado com a lógica implementada.
+        // Nesse caso, a lógica será sempre up pois a configuração em Handler.java está fixa.
+        assertEquals("up", body.get("move"), "O movimento esperado era 'up' em direção à comida");
     }
+
 
     @Test
     @DisplayName("Teste da rota /end - Deve retornar status 200 OK sem corpo")

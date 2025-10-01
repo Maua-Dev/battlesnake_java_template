@@ -5,6 +5,10 @@ import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
 import com.google.gson.Gson;
+import com.mauadev.code.entities.Board;
+import com.mauadev.code.entities.Coordinate;
+import com.mauadev.code.entities.GameState;
+import com.mauadev.code.entities.Snake;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -70,7 +74,7 @@ public class Handler implements RequestHandler<APIGatewayProxyRequestEvent, APIG
     private Map<String, String> handleInfo() {
         Map<String, String> info = new HashMap<>();
         info.put("apiversion", "1");
-        info.put("author", "seu-nome-aqui");
+        info.put("author", "Leo");
         info.put("color", "#888888"); // Ex: Cinza
         info.put("head", "default");
         info.put("tail", "default");
@@ -92,9 +96,52 @@ public class Handler implements RequestHandler<APIGatewayProxyRequestEvent, APIG
         // AQUI VAI A LÓGICA DA SUA COBRA!
         // O corpo da requisição (request.getBody()) contém o estado atual do tabuleiro.
         // Você deve analisá-lo para tomar uma decisão inteligente.
+
+        // Exemplo de um objeto tabuleiro:
+        // {
+        // "height": 11,
+        // "width": 11,
+        // "food": [
+        //     {"x": 5, "y": 5},
+        //     {"x": 9, "y": 0},
+        //     {"x": 2, "y": 6}
+        // ],
+        // "hazards": [
+        //     {"x": 0, "y": 0},
+        //     {"x": 0, "y": 1},
+        //     {"x": 0, "y": 2}
+        // ],
+        // "snakes": [
+        //     {"id": "snake-one", ... },
+        //     {"id": "snake-two", ... },
+        //     {"id": "snake-three", ... }
+        // ]
+        // }
+
+        // O tabuleiro deve ser acessado usando: 
+        // Type mapType = new TypeToken<Map<String, String>>() {}.getType();
+        // Map<String, String> body = gson.fromJson(response.getBody(), mapType);
         
         // Exemplo de lógica muito simples: sempre se mover para cima.
         // CUIDADO: Isso fará sua cobra bater na parede rapidamente!
+
+        String requestBody = request.getBody();
+        GameState gameState = gson.fromJson(requestBody, GameState.class);
+        Board board = gameState.getBoard();
+        Snake you = gameState.getYou();
+        
+        System.out.println("--- Turno: " + gameState.getTurn() + " ---");
+        System.out.println("Minha vida: " + you.getHealth());
+        System.out.println("Posição da minha cabeça: (" + you.getHead().getX() + ", " + you.getHead().getY() + ")");
+
+        if (!board.getFood().isEmpty()) {
+            Coordinate firstFood = board.getFood().get(0);
+            System.out.println("Comida mais próxima em: (" + firstFood.getX() + ", " + firstFood.getY() + ")");
+        }
+
+        // Lógica do movimento (exemplo simples)
+        // Agora que você tem o estado do jogo, pode implementar uma lógica mais inteligente aqui.
+
         Map<String, String> move = new HashMap<>();
         move.put("move", "up");
         move.put("shout", "Estou indo para cima!"); // Opcional
