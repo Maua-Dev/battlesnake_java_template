@@ -1,8 +1,8 @@
 terraform {
   backend "s3" {
     # app/battlesnake-lambda-dev/terraform.tfstate key
-    region         = "us-east-1"
-    encrypt        = true # Garante que o estado seja criptografado no S3
+    region  = "us-east-1"
+    encrypt = true # Garante que o estado seja criptografado no S3
   }
 
   required_providers {
@@ -45,6 +45,13 @@ resource "aws_iam_role_policy_attachment" "lambda_exec_policy" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
+# criado antes da lambda para limitarmos a retencao dos logs. sem isso a AWS
+# cria o grupo sozinha e guarda os logs para sempre, o que vira custo parado
+resource "aws_cloudwatch_log_group" "lambda" {
+  name              = "/aws/lambda/${var.project_name}-lambda-${var.environment}"
+  retention_in_days = 14
+}
+
 # criando a funcao lambda
 resource "aws_lambda_function" "lambda_battle_snake_java" {
   function_name = "${var.project_name}-lambda-${var.environment}"
@@ -55,7 +62,14 @@ resource "aws_lambda_function" "lambda_battle_snake_java" {
   handler = "com.mauadev.code.Handler::handleRequest"
   runtime = "java17"
 
+  # a JVM sobe devagar: com 1024 MB o cold start fica abaixo de 500ms e a cobra
+  # nao e derrubada pelo health sweeper da Arena
+  memory_size = 1024
+  timeout     = 10
+
   source_code_hash = filebase64sha256("../../target/battlesnake-lambda-1.0.jar")
+
+  depends_on = [aws_cloudwatch_log_group.lambda]
 }
 
 
@@ -125,6 +139,8 @@ resource "aws_api_gateway_deployment" "deployment" {
       aws_api_gateway_resource.resource.id,
       aws_api_gateway_method.method.id,
       aws_api_gateway_integration.integration.id,
+      aws_api_gateway_method.root_method.id,
+      aws_api_gateway_integration.root_integration.id,
     ]))
   }
   lifecycle {

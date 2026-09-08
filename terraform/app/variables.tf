@@ -1,6 +1,6 @@
 variable "project_name" {
-    type = string
-    description = "O nome único para esta instância do projeto. Será usado para nomear recursos e o workspace."
+  type        = string
+  description = "O nome único para esta instância do projeto. Será usado para nomear recursos e o workspace."
 }
 
 variable "environment" {
