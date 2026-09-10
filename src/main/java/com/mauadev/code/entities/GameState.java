@@ -1,4 +1,4 @@
-﻿package com.mauadev.code.entities;
+package com.mauadev.code.entities;
 
 /** O pacote completo que chega em /start, /move e /end. */
 public class GameState {

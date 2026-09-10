@@ -1,4 +1,4 @@
-﻿package com.mauadev.code.entities;
+package com.mauadev.code.entities;
 
 /** Metadados da partida. */
 public class Game {

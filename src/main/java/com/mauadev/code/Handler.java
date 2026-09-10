@@ -1,4 +1,4 @@
-﻿package com.mauadev.code;
+package com.mauadev.code;
 
 // Ponte entre o AWS Lambda e a logica da sua cobra.
 //

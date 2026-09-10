@@ -1,4 +1,4 @@
-﻿package com.mauadev;
+package com.mauadev;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
@@ -141,6 +141,53 @@ public class HandlerTest {
         for (int i = 0; i < 50; i++) {
             APIGatewayProxyResponseEvent resp = handler.handleRequest(request("/move", state), context);
             assertNotEquals("up", parseBody(resp.getBody()).get("move"));
+        }
+    }
+
+    // --- T4: evita parede quando tem opcao ---
+
+    @Test
+    @DisplayName("T4 - evita parede quando tem outra opcao")
+    public void testMove_evitaParede() {
+        // Cobra no canto (0,0), pescoco a direita (1,0):
+        // left (x=-1) e down (y=-1) saem do tabuleiro. Pescoço bloqueia right.
+        // A única opção segura é up.
+        String state = gameStateJson(0, 0, 1, 0);
+        for (int i = 0; i < 50; i++) {
+            APIGatewayProxyResponseEvent resp = handler.handleRequest(request("/move", state), context);
+            String move = parseBody(resp.getBody()).get("move");
+            assertNotEquals("left", move, "saiu do tabuleiro para a esquerda");
+            assertNotEquals("down", move, "saiu do tabuleiro para baixo");
+            assertNotEquals("right", move, "voltou pelo pescoco");
+            assertEquals("up", move, "deveria ter escolhido up");
+        }
+    }
+
+    // --- T5: evita proprio corpo quando tem opcao ---
+
+    @Test
+    @DisplayName("T5 - evita proprio corpo quando tem opcao")
+    public void testMove_evitaProprioCorpo() {
+        // Cabeca em (5,4), pescoco em (4,4) [esquerda], corpo em (5,5) [acima]
+        // Restam right e down
+        String stateJson = """
+                {
+                  "game": {"id": "teste", "timeout": 500},
+                  "turn": 1,
+                  "board": {"height": 11, "width": 11, "food": [], "hazards": [], "snakes": []},
+                  "you": {
+                    "id": "s1", "name": "cobra", "health": 100,
+                    "body": [{"x": 5, "y": 4}, {"x": 4, "y": 4}, {"x": 5, "y": 5}, {"x": 4, "y": 3}],
+                    "head": {"x": 5, "y": 4}, "length": 4
+                  }
+                }
+                """;
+        for (int i = 0; i < 50; i++) {
+            APIGatewayProxyResponseEvent resp = handler.handleRequest(request("/move", stateJson), context);
+            String move = parseBody(resp.getBody()).get("move");
+            assertNotEquals("left", move, "voltou pelo pescoco");
+            assertNotEquals("up", move, "bateu no proprio corpo");
+            assertTrue(List.of("right", "down").contains(move));
         }
     }
 

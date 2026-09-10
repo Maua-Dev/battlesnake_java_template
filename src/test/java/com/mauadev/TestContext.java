@@ -1,4 +1,4 @@
-﻿package com.mauadev;
+package com.mauadev;
 
 import com.amazonaws.services.lambda.runtime.ClientContext;
 import com.amazonaws.services.lambda.runtime.CognitoIdentity;

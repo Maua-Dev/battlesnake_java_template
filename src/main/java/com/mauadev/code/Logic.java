@@ -1,4 +1,4 @@
-﻿package com.mauadev.code;
+package com.mauadev.code;
 
 // Bem-vindo ao
 // __________         __    __  .__                               __
@@ -97,16 +97,44 @@ public class Logic {
                 // pescoco acima da cabeca -> nao suba
                 isMoveSafe.remove("up");
             }
+        // 2. Impedir que a cobra saia do tabuleiro (paredes)
+        if (state.getBoard() != null) {
+            int boardWidth = state.getBoard().getWidth();
+            int boardHeight = state.getBoard().getHeight();
+
+            if (myHead.getX() + 1 >= boardWidth) {
+                isMoveSafe.remove("right");
+            }
+            if (myHead.getX() - 1 < 0) {
+                isMoveSafe.remove("left");
+            }
+            if (myHead.getY() + 1 >= boardHeight) {
+                isMoveSafe.remove("up");
+            }
+            if (myHead.getY() - 1 < 0) {
+                isMoveSafe.remove("down");
+            }
         }
 
-        // TODO: Passo 1 - impedir que a cobra saia do tabuleiro
-        // int boardWidth = state.getBoard().getWidth();
-        // int boardHeight = state.getBoard().getHeight();
+        // 3. Impedir que a cobra bata no próprio corpo
+        if (body != null) {
+            for (Coordinate segment : body) {
+                if (segment.getX() == myHead.getX() + 1 && segment.getY() == myHead.getY()) {
+                    isMoveSafe.remove("right");
+                }
+                if (segment.getX() == myHead.getX() - 1 && segment.getY() == myHead.getY()) {
+                    isMoveSafe.remove("left");
+                }
+                if (segment.getX() == myHead.getX() && segment.getY() == myHead.getY() + 1) {
+                    isMoveSafe.remove("up");
+                }
+                if (segment.getX() == myHead.getX() && segment.getY() == myHead.getY() - 1) {
+                    isMoveSafe.remove("down");
+                }
+            }
+        }
 
-        // TODO: Passo 2 - impedir que a cobra bata no proprio corpo
-        // List<Coordinate> myBody = state.getYou().getBody();
-
-        // TODO: Passo 3 - impedir que a cobra bata nas adversarias
+        // TODO: Passo 3 — impedir que a cobra bata nas adversárias
         // List<Snake> opponents = state.getBoard().getSnakes();
 
         // Sobrou alguma direcao segura?
