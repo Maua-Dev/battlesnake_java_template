@@ -97,6 +97,8 @@ public class Logic {
                 // pescoco acima da cabeca -> nao suba
                 isMoveSafe.remove("up");
             }
+        }
+
         // 2. Impedir que a cobra saia do tabuleiro (paredes)
         if (state.getBoard() != null) {
             int boardWidth = state.getBoard().getWidth();
