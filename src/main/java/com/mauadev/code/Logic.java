@@ -20,7 +20,7 @@ import com.mauadev.code.entities.GameState;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Logica da cobra. E AQUI que voce programa a inteligencia da snake.
@@ -32,7 +32,9 @@ import java.util.Random;
  */
 public class Logic {
 
-    private static final Random RANDOM = new Random();
+    // ThreadLocalRandom, e nao um Random estatico: com o SnapStart ligado o
+    // seed de um campo estatico seria capturado no snapshot, e toda execucao
+    // restaurada sortearia exatamente a mesma sequencia de jogadas.
 
     /**
      * GET / - chamado quando voce cadastra a cobra e a cada partida.
@@ -144,11 +146,11 @@ public class Logic {
             // Emergencia: todas as direcoes sao perigosas.
             // Escolhemos uma ao acaso entre as 4 - melhor do que travar.
             List<String> allMoves = Arrays.asList("up", "down", "left", "right");
-            return allMoves.get(RANDOM.nextInt(allMoves.size()));
+            return allMoves.get(ThreadLocalRandom.current().nextInt(allMoves.size()));
         }
 
         // Escolhe uma direcao segura ao acaso.
-        String chosen = isMoveSafe.get(RANDOM.nextInt(isMoveSafe.size()));
+        String chosen = isMoveSafe.get(ThreadLocalRandom.current().nextInt(isMoveSafe.size()));
 
         // TODO: Passo 4 - ir atras da comida em vez de sortear, para nao morrer de fome
         // List<Coordinate> food = state.getBoard().getFood();

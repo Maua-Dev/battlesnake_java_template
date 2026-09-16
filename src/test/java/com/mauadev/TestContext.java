@@ -62,12 +62,12 @@ public class TestContext implements Context {
         return new LambdaLogger() {
             @Override
             public void log(String message) {
-                System.out.print(message);
+                System.out.println(message);
             }
 
             @Override
             public void log(byte[] message) {
-                System.out.print(new String(message));
+                System.out.println(new String(message));
             }
         };
     }
