@@ -55,7 +55,31 @@ resource "aws_lambda_function" "lambda_battle_snake_java" {
   handler = "com.mauadev.code.Handler::handleRequest"
   runtime = "java17"
 
+  # A JVM sobe devagar e a CPU da Lambda escala com a memoria: em 128 MB (o
+  # padrao quando nada e definido) o cold start passa de varios segundos e
+  # estoura o timeout padrao de 3s.
+  memory_size = 1024
+  timeout     = 10
+
+  # SnapStart tira um snapshot da JVM ja inicializada e restaura a partir dele,
+  # cortando o cold start de segundos para centenas de milissegundos. So vale
+  # para versoes publicadas, por isso o publish = true.
+  publish = true
+
+  snap_start {
+    apply_on = "PublishedVersions"
+  }
+
   source_code_hash = filebase64sha256("../../target/battlesnake-lambda-1.0.jar")
+}
+
+# O snapshot pertence a uma versao publicada. Sem apontar o API Gateway para um
+# alias, o trafego iria para $LATEST, que roda sem SnapStart e anula o ganho.
+resource "aws_lambda_alias" "live" {
+  name             = "live"
+  description      = "Versao publicada que o API Gateway invoca, com SnapStart ativo"
+  function_name    = aws_lambda_function.lambda_battle_snake_java.function_name
+  function_version = aws_lambda_function.lambda_battle_snake_java.version
 }
 
 
@@ -96,7 +120,7 @@ resource "aws_api_gateway_integration" "integration" {
   http_method             = aws_api_gateway_method.method.http_method
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
-  uri                     = aws_lambda_function.lambda_battle_snake_java.invoke_arn
+  uri                     = aws_lambda_alias.live.invoke_arn
 }
 
 resource "aws_api_gateway_integration" "root_integration" {
@@ -105,7 +129,7 @@ resource "aws_api_gateway_integration" "root_integration" {
   http_method             = aws_api_gateway_method.root_method.http_method
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
-  uri                     = aws_lambda_function.lambda_battle_snake_java.invoke_arn
+  uri                     = aws_lambda_alias.live.invoke_arn
 }
 
 # adicionando permiossoes na lambda para o apigateway poder executala
@@ -113,6 +137,7 @@ resource "aws_lambda_permission" "api_gateway_permission" {
   statement_id  = "AllowAPIGatewayToInvoke"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.lambda_battle_snake_java.function_name
+  qualifier     = aws_lambda_alias.live.name
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_api_gateway_rest_api.api.execution_arn}/*/*"
 }

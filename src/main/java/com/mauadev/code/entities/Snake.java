@@ -71,7 +71,6 @@ public class Snake {
     }
     public void setLength(int length) {
         this.length = length;
-        this.body = this.body.subList(0, length);
     }
     public void setShout(String shout) {
         this.shout = shout;

@@ -1,58 +1,102 @@
 package com.mauadev;
 
 import com.amazonaws.services.lambda.runtime.Context;
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
-import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import com.mauadev.code.Handler;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Type;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-
-import com.mauadev.code.Handler;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Testes unitários para a classe Handler.
+ * Testes do Handler - percorrem o caminho completo
+ * API Gateway -> Handler -> Logic.
  */
 public class HandlerTest {
 
-    private Handler handler;
-    private Context testContext;
-    private Gson gson;
+    private static final List<String> DIRECOES = List.of("up", "down", "left", "right");
+    private static final Gson GSON = new Gson();
 
-    // @BeforeEach garante que este método seja executado antes de cada @Test
+    private Handler handler;
+    private Context context;
+
     @BeforeEach
     public void setUp() {
         handler = new Handler();
-        gson = new Gson();
-        // Criamos um Context de teste "mockado" para passar para o handler.
-        testContext = new TestContext();
+        context = new TestContext();
     }
 
+    // --- Helpers ---
+
+    /** Monta um estado de jogo minimo com cabeca e pescoco. */
+    private String gameStateJson(int hx, int hy, int nx, int ny) {
+        return String.format("""
+                {
+                  "game": {"id": "partida-de-teste", "timeout": 500},
+                  "turn": 4,
+                  "board": {
+                    "height": 11, "width": 11,
+                    "food": [{"x": 5, "y": 5}],
+                    "hazards": [],
+                    "snakes": []
+                  },
+                  "you": {
+                    "id": "minha-cobra", "name": "MinhaCobra", "health": 100,
+                    "body": [{"x": %d, "y": %d}, {"x": %d, "y": %d}, {"x": %d, "y": %d}],
+                    "head": {"x": %d, "y": %d},
+                    "length": 3
+                  }
+                }
+                """, hx, hy, nx, ny, nx, ny - 1, hx, hy);
+    }
+
+    /** Evento no formato 1.0 (API Gateway REST): o caminho vem em "path". */
+    private Map<String, Object> request(String path, String body) {
+        Map<String, Object> req = new HashMap<>();
+        req.put("path", path);
+        req.put("body", body);
+        return req;
+    }
+
+    /** Evento no formato 2.0 (Function URL): o caminho vem em "rawPath". */
+    private Map<String, Object> requestV2(String path, String body) {
+        Map<String, Object> http = new HashMap<>();
+        http.put("path", path);
+        http.put("method", "POST");
+
+        Map<String, Object> requestContext = new HashMap<>();
+        requestContext.put("http", http);
+
+        Map<String, Object> req = new HashMap<>();
+        req.put("version", "2.0");
+        req.put("rawPath", path);
+        req.put("requestContext", requestContext);
+        req.put("body", body);
+        return req;
+    }
+
+    private Map<String, String> parseBody(String json) {
+        Type type = new TypeToken<Map<String, String>>() {}.getType();
+        return GSON.fromJson(json, type);
+    }
+
+    // --- T1: info retorna campos obrigatorios ---
+
     @Test
-    @DisplayName("Teste da rota / (Info) - Deve retornar informações da cobra com status 200")
-    public void testHandleInfo_shouldReturnSnakeInfo() {
-        // Arrange: Prepara a requisição para a rota "/"
-        APIGatewayProxyRequestEvent request = new APIGatewayProxyRequestEvent().withPath("/");
+    @DisplayName("T1 - GET / retorna os campos obrigatorios da cobra")
+    public void testInfo_retornaCamposObrigatorios() {
+        APIGatewayProxyResponseEvent response = handler.handleRequest(request("/", null), context);
 
-        // Act: Executa o método a ser testado
-        APIGatewayProxyResponseEvent response = handler.handleRequest(request, testContext);
-
-        // Assert: Verifica os resultados
         assertEquals(200, response.getStatusCode());
-        assertEquals("application/json", response.getHeaders().get("Content-Type"));
-        assertNotNull(response.getBody());
-
-        // Analisa o corpo JSON para verificar seu conteúdo
-        Type mapType = new TypeToken<Map<String, String>>() {}.getType();
-        Map<String, String> body = gson.fromJson(response.getBody(), mapType);
-
+        Map<String, String> body = parseBody(response.getBody());
         assertEquals("1", body.get("apiversion"));
         assertNotNull(body.get("author"));
         assertNotNull(body.get("color"));
@@ -60,173 +104,274 @@ public class HandlerTest {
         assertNotNull(body.get("tail"));
     }
 
-    @Test
-    @DisplayName("Teste da rota /start - Deve retornar status 200 OK sem corpo")
-    public void testHandleStart_shouldReturn200OK() {
-        // Arrange
-        APIGatewayProxyRequestEvent request = new APIGatewayProxyRequestEvent().withPath("/start");
-        // O corpo da requisição pode ser um JSON com o estado do jogo, mas para este teste não é necessário
-        request.setBody("{}"); 
-
-        // Act
-        APIGatewayProxyResponseEvent response = handler.handleRequest(request, testContext);
-
-        // Assert
-        assertEquals(200, response.getStatusCode());
-        // O handler para /start não define um corpo de resposta, então ele pode ser nulo ou vazio
-        assertTrue(response.getBody() == null || response.getBody().isEmpty());
-    }
+    // --- T2: move retorna direcao valida ---
 
     @Test
-    @DisplayName("Teste da rota /move - Deve se mover para cima em direção à comida")
-    public void testHandleMove_withBoardData_shouldMoveUpTowardsFood() {
-        // Arrange 🐍
-        APIGatewayProxyRequestEvent request = new APIGatewayProxyRequestEvent().withPath("/move");
+    @DisplayName("T2 - POST /move retorna uma direcao valida")
+    public void testMove_retornaDirecaoValida() {
+        String stateJson = gameStateJson(5, 4, 4, 4);
 
-        String jsonRequestBody = """
-        {
-          "game": {
-            "id": "game-id-123",
-            "ruleset": {"name": "standard", "version": "v1.2.3"},
-            "timeout": 500
-          },
-          "turn": 4,
-          "board": {
-            "height": 11,
-            "width": 11,
-            "food": [
-              {"x": 5, "y": 5},
-              {"x": 9, "y": 0},
-              {"x": 2, "y": 6}
-            ],
-            "hazards": [
-              {"x": 3, "y": 3}
-            ],
-            "snakes": [
-              {
-                "id": "snake-id-yours",
-                "name": "MySnake",
-                "health": 90,
-                "body": [{"x": 5, "y": 4}, {"x": 4, "y": 4}, {"x": 3, "y": 4}],
-                "head": {"x": 5, "y": 4},
-                "length": 3,
-                "shout": "Going for food!"
-              },
-              {
-                "id": "snake-id-opponent",
-                "name": "OpponentSnake",
-                "health": 95,
-                "body": [{"x": 1, "y": 1}, {"x": 1, "y": 2}, {"x": 1, "y": 3}],
-                "head": {"x": 1, "y": 1},
-                "length": 3,
-                "shout": "Hisss"
-              }
-            ]
-          },
-          "you": {
-            "id": "snake-id-yours",
-            "name": "MySnake",
-            "health": 50,
-            "body": [{"x": 6, "y": 4}, {"x": 4, "y": 4}, {"x": 3, "y": 4}],
-            "head": {"x": 6, "y": 4},
-            "length": 3,
-            "shout": "Going for food!"
-          }
+        for (int i = 0; i < 50; i++) {
+            APIGatewayProxyResponseEvent response = handler.handleRequest(request("/move", stateJson), context);
+            assertEquals(200, response.getStatusCode());
+            Map<String, String> body = parseBody(response.getBody());
+            assertTrue(DIRECOES.contains(body.get("move")),
+                    "Direcao invalida: " + body.get("move"));
         }
-        """;
-
-        request.setBody(jsonRequestBody);
-
-        // Act 🎯
-        APIGatewayProxyResponseEvent response = handler.handleRequest(request, testContext);
-
-        // Assert ✅
-        assertEquals(200, response.getStatusCode(), "O status code da resposta deve ser 200");
-        assertNotNull(response.getBody(), "O corpo da resposta não pode ser nulo");
-
-        Type mapType = new TypeToken<Map<String, String>>() {}.getType();
-        Map<String, String> body = gson.fromJson(response.getBody(), mapType);
-
-        // Aqui você verifica se o seu algorítmo está realizando o movimento certo, alinhado com a lógica implementada.
-        // Nesse caso, a lógica será sempre up pois a configuração em Handler.java está fixa.
-        assertEquals("up", body.get("move"), "O movimento esperado era 'up' em direção à comida");
     }
 
+    // --- T3: nunca volta contra o pescoco ---
 
     @Test
-    @DisplayName("Teste da rota /end - Deve retornar status 200 OK sem corpo")
-    public void testHandleEnd_shouldReturn200OK() {
-        // Arrange
-        APIGatewayProxyRequestEvent request = new APIGatewayProxyRequestEvent().withPath("/end");
-        request.setBody("{}");
+    @DisplayName("T3a - nao volta para a esquerda quando pescoco esta a esquerda")
+    public void testMove_naoVoltaEsquerda() {
+        String state = gameStateJson(5, 4, 4, 4); // pescoco a esquerda
+        for (int i = 0; i < 50; i++) {
+            APIGatewayProxyResponseEvent resp = handler.handleRequest(request("/move", state), context);
+            assertNotEquals("left", parseBody(resp.getBody()).get("move"));
+        }
+    }
 
-        // Act
-        APIGatewayProxyResponseEvent response = handler.handleRequest(request, testContext);
+    @Test
+    @DisplayName("T3b - nao volta para a direita quando pescoco esta a direita")
+    public void testMove_naoVoltaDireita() {
+        String state = gameStateJson(5, 4, 6, 4); // pescoco a direita
+        for (int i = 0; i < 50; i++) {
+            APIGatewayProxyResponseEvent resp = handler.handleRequest(request("/move", state), context);
+            assertNotEquals("right", parseBody(resp.getBody()).get("move"));
+        }
+    }
 
-        // Assert
+    @Test
+    @DisplayName("T3c - nao desce quando pescoco esta abaixo")
+    public void testMove_naoDesce() {
+        String state = gameStateJson(5, 4, 5, 3); // pescoco abaixo
+        for (int i = 0; i < 50; i++) {
+            APIGatewayProxyResponseEvent resp = handler.handleRequest(request("/move", state), context);
+            assertNotEquals("down", parseBody(resp.getBody()).get("move"));
+        }
+    }
+
+    @Test
+    @DisplayName("T3d - nao sobe quando pescoco esta acima")
+    public void testMove_naoSobe() {
+        String state = gameStateJson(5, 4, 5, 5); // pescoco acima
+        for (int i = 0; i < 50; i++) {
+            APIGatewayProxyResponseEvent resp = handler.handleRequest(request("/move", state), context);
+            assertNotEquals("up", parseBody(resp.getBody()).get("move"));
+        }
+    }
+
+    // --- T4: evita parede quando tem opcao ---
+
+    @Test
+    @DisplayName("T4 - evita parede quando tem outra opcao")
+    public void testMove_evitaParede() {
+        // Cobra no canto (0,0), pescoco a direita (1,0):
+        // left (x=-1) e down (y=-1) saem do tabuleiro. Pescoço bloqueia right.
+        // A única opção segura é up.
+        String state = gameStateJson(0, 0, 1, 0);
+        for (int i = 0; i < 50; i++) {
+            APIGatewayProxyResponseEvent resp = handler.handleRequest(request("/move", state), context);
+            String move = parseBody(resp.getBody()).get("move");
+            assertNotEquals("left", move, "saiu do tabuleiro para a esquerda");
+            assertNotEquals("down", move, "saiu do tabuleiro para baixo");
+            assertNotEquals("right", move, "voltou pelo pescoco");
+            assertEquals("up", move, "deveria ter escolhido up");
+        }
+    }
+
+    // --- T5: evita proprio corpo quando tem opcao ---
+
+    @Test
+    @DisplayName("T5 - evita proprio corpo quando tem opcao")
+    public void testMove_evitaProprioCorpo() {
+        // Cabeca em (5,4), pescoco em (4,4) [esquerda], corpo em (5,5) [acima]
+        // Restam right e down
+        String stateJson = """
+                {
+                  "game": {"id": "teste", "timeout": 500},
+                  "turn": 1,
+                  "board": {"height": 11, "width": 11, "food": [], "hazards": [], "snakes": []},
+                  "you": {
+                    "id": "s1", "name": "cobra", "health": 100,
+                    "body": [{"x": 5, "y": 4}, {"x": 4, "y": 4}, {"x": 5, "y": 5}, {"x": 4, "y": 3}],
+                    "head": {"x": 5, "y": 4}, "length": 4
+                  }
+                }
+                """;
+        for (int i = 0; i < 50; i++) {
+            APIGatewayProxyResponseEvent resp = handler.handleRequest(request("/move", stateJson), context);
+            String move = parseBody(resp.getBody()).get("move");
+            assertNotEquals("left", move, "voltou pelo pescoco");
+            assertNotEquals("up", move, "bateu no proprio corpo");
+            assertTrue(List.of("right", "down").contains(move));
+        }
+    }
+
+    // --- T6: comportamento sem safe moves (nao deve lancar excecao) ---
+
+    @Test
+    @DisplayName("T6 - comportamento definido quando nao ha safe moves")
+    public void testMove_comportamentoSemSafeMoves() {
+        // Cabeca no canto, pescoco acima, corpo a direita
+        String stateJson = """
+                {
+                  "game": {"id": "teste", "timeout": 500},
+                  "turn": 1,
+                  "board": {"height": 11, "width": 11, "food": [], "hazards": [], "snakes": []},
+                  "you": {
+                    "id": "s1", "name": "cobra", "health": 100,
+                    "body": [{"x": 0, "y": 0}, {"x": 0, "y": 1}, {"x": 1, "y": 0}],
+                    "head": {"x": 0, "y": 0}, "length": 3
+                  }
+                }
+                """;
+        APIGatewayProxyResponseEvent response = handler.handleRequest(request("/move", stateJson), context);
         assertEquals(200, response.getStatusCode());
-        assertTrue(response.getBody() == null || response.getBody().isEmpty());
+        Map<String, String> body = parseBody(response.getBody());
+        assertTrue(DIRECOES.contains(body.get("move")), "Direcao invalida: " + body.get("move"));
+    }
+
+    // --- start e end retornam 200 ---
+
+    @Test
+    @DisplayName("POST /start retorna 200")
+    public void testStart_retorna200() {
+        String state = gameStateJson(5, 4, 4, 4);
+        APIGatewayProxyResponseEvent response = handler.handleRequest(request("/start", state), context);
+        assertEquals(200, response.getStatusCode());
     }
 
     @Test
-    @DisplayName("Teste de rota inválida - Deve retornar erro 404 Not Found")
-    public void testInvalidPath_shouldReturn404NotFound() {
-        // Arrange
-        APIGatewayProxyRequestEvent request = new APIGatewayProxyRequestEvent().withPath("/caminho-que-nao-existe");
+    @DisplayName("POST /end retorna 200")
+    public void testEnd_retorna200() {
+        String state = gameStateJson(5, 4, 4, 4);
+        APIGatewayProxyResponseEvent response = handler.handleRequest(request("/end", state), context);
+        assertEquals(200, response.getStatusCode());
+    }
 
-        // Act
-        APIGatewayProxyResponseEvent response = handler.handleRequest(request, testContext);
+    // --- T7: formato 2.0 (Function URL e HTTP API) ---
 
-        // Assert
+    @Test
+    @DisplayName("T7a - GET / no formato 2.0 retorna as informacoes da cobra")
+    public void testFormatoV2_info() {
+        APIGatewayProxyResponseEvent response = handler.handleRequest(requestV2("/", null), context);
+
+        assertEquals(200, response.getStatusCode());
+        assertEquals("1", parseBody(response.getBody()).get("apiversion"));
+    }
+
+    @Test
+    @DisplayName("T7b - POST /move no formato 2.0 retorna uma direcao valida")
+    public void testFormatoV2_move() {
+        String state = gameStateJson(5, 4, 4, 4);
+        APIGatewayProxyResponseEvent response = handler.handleRequest(requestV2("/move", state), context);
+
+        assertEquals(200, response.getStatusCode());
+        String jogada = parseBody(response.getBody()).get("move");
+        assertTrue(DIRECOES.contains(jogada), "Direcao invalida: " + jogada);
+    }
+
+    @Test
+    @DisplayName("T7c - formato 2.0 sem rawPath ainda resolve por requestContext.http.path")
+    public void testFormatoV2_semRawPath() {
+        String state = gameStateJson(5, 4, 4, 4);
+        Map<String, Object> req = requestV2("/move", state);
+        req.remove("rawPath");
+
+        APIGatewayProxyResponseEvent response = handler.handleRequest(req, context);
+
+        assertEquals(200, response.getStatusCode());
+        assertTrue(DIRECOES.contains(parseBody(response.getBody()).get("move")));
+    }
+
+    // --- T8: prefixo de stage e barra sobrando ---
+
+    @Test
+    @DisplayName("T8 - caminho com o stage na frente e barra no fim ainda roteia")
+    public void testPrefixoDeStage() {
+        String state = gameStateJson(5, 4, 4, 4);
+
+        assertEquals(200, handler.handleRequest(request("/dev/move", state), context).getStatusCode());
+        assertEquals(200, handler.handleRequest(request("/move/", state), context).getStatusCode());
+        assertEquals(200, handler.handleRequest(request("/dev", null), context).getStatusCode());
+    }
+
+    @Test
+    @DisplayName("T8b - rota realmente desconhecida continua sendo 404")
+    public void testRotaDesconhecida_retorna404() {
+        APIGatewayProxyResponseEvent response = handler.handleRequest(request("/nao-existe", null), context);
+
         assertEquals(404, response.getStatusCode());
-        assertNotNull(response.getBody());
-        
-        Type mapType = new TypeToken<Map<String, String>>() {}.getType();
-        Map<String, String> body = gson.fromJson(response.getBody(), mapType);
-
-        assertEquals("Path not found", body.get("error"));
+        assertEquals("application/json", response.getHeaders().get("Content-Type"));
     }
 
-    /**
-     * Uma implementação simples da interface Context para fins de teste.
-     * Ela fornece um logger que imprime no console, evitando NullPointerException.
-     */
-    private static class TestContext implements Context {
-        @Override
-        public String getAwsRequestId() { return "test-request-id"; }
-        @Override
-        public String getLogGroupName() { return "test-log-group"; }
-        @Override
-        public String getLogStreamName() { return "test-log-stream"; }
-        @Override
-        public String getFunctionName() { return "test-function"; }
-        @Override
-        public String getFunctionVersion() { return "1.0"; }
-        @Override
-        public String getInvokedFunctionArn() { return "arn:aws:lambda:us-east-1:123456789012:function:test-function"; }
-        @Override
-        public com.amazonaws.services.lambda.runtime.CognitoIdentity getIdentity() { return null; }
-        @Override
-        public com.amazonaws.services.lambda.runtime.ClientContext getClientContext() { return null; }
-        @Override
-        public int getRemainingTimeInMillis() { return 30000; }
-        @Override
-        public int getMemoryLimitInMB() { return 512; }
-        @Override
-        public LambdaLogger getLogger() {
-            // Retorna um logger simples que imprime no console durante o teste.
-            return new TestLogger();
-        }
+    @Test
+    @DisplayName("T8c - prefixo nao reconhecido como stage deve retornar 404")
+    public void testRoteamentoExato_urlPermissivaRetorna404() {
+        String state = gameStateJson(5, 4, 4, 4);
+        APIGatewayProxyResponseEvent response = handler.handleRequest(request("/alguma-coisa/move", state), context);
+
+        assertEquals(404, response.getStatusCode());
     }
 
-    private static class TestLogger implements LambdaLogger {
-        @Override
-        public void log(String message) {
-            System.out.println(message);
-        }
-        @Override
-        public void log(byte[] message) {
-            System.out.println(new String(message));
-        }
+    @Test
+    @DisplayName("T8d - metodo incorreto retorna 404")
+    public void testMetodoIncorreto_retorna404() {
+        Map<String, Object> reqGetMove = request("/move", null);
+        reqGetMove.put("httpMethod", "GET");
+        APIGatewayProxyResponseEvent resp1 = handler.handleRequest(reqGetMove, context);
+        assertEquals(404, resp1.getStatusCode());
+
+        Map<String, Object> reqPostInfo = request("/", null);
+        reqPostInfo.put("httpMethod", "POST");
+        APIGatewayProxyResponseEvent resp2 = handler.handleRequest(reqPostInfo, context);
+        assertEquals(404, resp2.getStatusCode());
+    }
+
+    // --- T9: corpo invalido vira 400, e nao 200 nem 500 ---
+
+    @Test
+    @DisplayName("T9a - POST /move sem corpo retorna 400")
+    public void testMove_semCorpo_retorna400() {
+        APIGatewayProxyResponseEvent response = handler.handleRequest(request("/move", null), context);
+
+        assertEquals(400, response.getStatusCode());
+        assertNotNull(parseBody(response.getBody()).get("error"));
+    }
+
+    @Test
+    @DisplayName("T9b - POST /move com JSON quebrado retorna 400")
+    public void testMove_jsonQuebrado_retorna400() {
+        APIGatewayProxyResponseEvent response = handler.handleRequest(request("/move", "{isso nao e json}"), context);
+
+        assertEquals(400, response.getStatusCode());
+    }
+
+    @Test
+    @DisplayName("T9c - POST /move sem o campo 'you' retorna 400, e nao uma jogada inventada")
+    public void testMove_semYou_retorna400() {
+        String semYou = """
+                {"game": {"id": "x", "timeout": 500}, "turn": 1,
+                 "board": {"height": 11, "width": 11, "food": [], "hazards": [], "snakes": []}}
+                """;
+        APIGatewayProxyResponseEvent response = handler.handleRequest(request("/move", semYou), context);
+
+        assertEquals(400, response.getStatusCode());
+        assertNull(parseBody(response.getBody()).get("move"), "nao pode devolver jogada para estado invalido");
+    }
+
+    // --- T10: toda resposta traz Content-Type ---
+
+    @Test
+    @DisplayName("T10 - todas as respostas trazem Content-Type")
+    public void testContentTypeSemprePresente() {
+        String state = gameStateJson(5, 4, 4, 4);
+
+        assertNotNull(handler.handleRequest(request("/", null), context).getHeaders().get("Content-Type"));
+        assertNotNull(handler.handleRequest(request("/move", state), context).getHeaders().get("Content-Type"));
+        assertNotNull(handler.handleRequest(request("/move", null), context).getHeaders().get("Content-Type"));
+        assertNotNull(handler.handleRequest(request("/nao-existe", null), context).getHeaders().get("Content-Type"));
     }
 }

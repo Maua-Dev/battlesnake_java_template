@@ -7,7 +7,7 @@ Ele foi escrito para rodar na AWS sem necessidade de servidor próprio, usando *
 
 ## 📦 Pré-requisitos
 
-- **Java JDK** (versão 11 ou superior)  
+- **Java JDK** (versão 17 ou superior)  
   [Download do JDK](https://www.oracle.com/java/technologies/javase-downloads.html) ou use o OpenJDK.
 - **Maven CLI**  
   [Download Maven](https://maven.apache.org/download.cgi)  
@@ -45,7 +45,9 @@ O projeto segue a estrutura **Maven Standard Directory Layout**:
 │   │   │   └── com
 │   │   │       └── mauadev
 │   │   │           └── code
-│   │   │               └── Handler.java   # Código principal!!!
+│   │   │               ├── Logic.java     # ⭐ SEU ARQUIVO PRINCIPAL
+│   │   │               ├── Handler.java   # Ponte Lambda ↔ Logic (não mexa)
+│   │   │               └── entities/      # Modelos de dados (não mexa)
 │   │   └── resources
 │   │       └── (se necessário, arquivos de configuração)
 │   └── test
@@ -53,6 +55,16 @@ O projeto segue a estrutura **Maven Standard Directory Layout**:
 ```
 
 ---
+
+## ⭐ Onde implementar sua snake
+
+| | Arquivo | O que fazer |
+|---|---|---|
+| ✅ **EDITE** | `src/main/java/com/mauadev/code/Logic.java` | **Este é o seu arquivo principal.** Implemente toda a inteligência da cobra aqui. |
+| 🚫 Não altere | `Handler.java` | Roteador HTTP entre o API Gateway e a sua lógica. |
+| 🚫 Não altere | `entities/` | Modelos de dados (GameState, Board, Snake…). |
+| 🚫 Não altere | `.github/`, Terraform, infraestrutura | Deploy automático — já configurado. |
+
 
 ## ⚙️ Dependências (`pom.xml`)
 
@@ -232,6 +244,7 @@ Assim que o Terraform concluir o deploy, será criada automaticamente uma URL p�
 5. Salve as configurações
 6. Agora você pode testar a cobra nos jogos e desafios!
 
+Ou acesse a [Arena Mauá](https://arena.devmaua.com) para competir com outros alunos!
 
 ---
 
@@ -246,7 +259,7 @@ O `Handler.java` implementa a interface do **AWS Lambda RequestHandler**, recebe
   - Retorna resposta JSON ou erro 404
 - **`handleInfo()`** → informações da cobra (cor, cabeça, cauda, autor, versão da API)
 - **`handleStart()`** → chamado no início do jogo (log inicial)
-- **`handleMove()`** → lógica da jogada (neste exemplo, sempre "up")
+- **`handleMove()`** → repassa para `Logic.getMove()`, que decide o movimento
 - **`handleEnd()`** → chamado no final do jogo (log final)
 - Usa **Gson** para converter objetos Java para JSON
 - Usa **APIGatewayProxyRequestEvent** e **APIGatewayProxyResponseEvent** para receber/enviar dados
@@ -276,6 +289,21 @@ mvn test
 
 ## 📌 Observações
 
-- O método `handleMove()` deve conter a inteligência do jogo.  
+- O método `Logic.getMove()` deve conter a inteligência do jogo.  
 - O uso do **maven-shade-plugin** é obrigatório para empacotar todas as dependências no JAR final.
 - **EVITE** adicionar mais dependencias, pois o shade plugin empacota **todas as dependencias** em um JAR, tornando-o **talvez muito pesado** para o deploy!!!
+
+---
+
+## 📈 Progressão pedagógica
+
+Use esta tabela como roteiro para evoluir a inteligência da sua cobra:
+
+| Nível | Nome | O que implementar |
+|---|---|---|
+| 0 | **Random** | movimento aleatório (já vem pronto) |
+| 1 | **Don't Die** | não voltar, não bater na parede, não bater em si mesmo |
+| 2 | **Food** | procurar comida |
+| 3 | **Space** | avaliar espaço disponível, evitar becos |
+| 4 | **Opponents** | considerar outras cobras, head-to-head |
+| 5 | **Advanced** | BFS, flood fill, A*, avaliação de território |
