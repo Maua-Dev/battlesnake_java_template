@@ -19,6 +19,8 @@ provider "aws" {
   region = "us-east-1"
 }
 
+data "aws_caller_identity" "current" {}
+
 # ------ configurando a funcao lambda ------
 
 # politica para a funcao lambda
@@ -35,8 +37,9 @@ data "aws_iam_policy_document" "assume_role" {
 
 # permissao
 resource "aws_iam_role" "lambda_role_name" {
-  name               = "lambda_role_battlesnake-${var.project_name}_${var.environment}"
-  assume_role_policy = data.aws_iam_policy_document.assume_role.json
+  name                 = "battlesnake-${var.project_name}-role-${var.environment}"
+  permissions_boundary = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:policy/pb-battlesnake-participant"
+  assume_role_policy   = data.aws_iam_policy_document.assume_role.json
 }
 
 # anexando a permissao a uma politica eu acho
@@ -47,7 +50,7 @@ resource "aws_iam_role_policy_attachment" "lambda_exec_policy" {
 
 # criando a funcao lambda
 resource "aws_lambda_function" "lambda_battle_snake_java" {
-  function_name = "${var.project_name}-lambda-${var.environment}"
+  function_name = "battlesnake-${var.project_name}-lambda-${var.environment}"
 
   filename = "../../target/battlesnake-lambda-1.0.jar"
 
@@ -87,7 +90,7 @@ resource "aws_lambda_alias" "live" {
 
 # instanciando o api gateway
 resource "aws_api_gateway_rest_api" "api" {
-  name        = "api-battlesnake-${var.project_name}-${var.environment}"
+  name        = "battlesnake-${var.project_name}-api-${var.environment}"
   description = "API para a funcao lambda do battle snake"
 }
 
